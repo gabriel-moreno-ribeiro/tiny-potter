@@ -74,8 +74,10 @@ Uncle Verno
 | tokens in input.txt | 6,304,282 | 1,613,313 | 1,472,117 |
 | characters per token | 1.00 | 3.91 | 4.28 |
 | tokens for 50 English sentences | 1,682 | 390 | 383 |
-| tokens for their Portuguese translations | 1,739 | 568 | 441 |
-| Portuguese/English tokens | 1.03 | 1.46 | 1.15 |
+| tokens for their Portuguese translations | n/a | 568 | 441 |
+| Portuguese/English tokens | n/a | 1.46 | 1.15 |
+
+My tokenizer gets n/a for Portuguese because its vocabulary is only the 90 plain ASCII characters of input.txt, so it can't encode à, á, ã, ç, é, ê, ó or ô.
 
 K2 splits the names the way they appear in the books, after a space.
 
@@ -89,7 +91,7 @@ K2 splits the names the way they appear in the books, after a space.
 | Quidditch | Q·u·i·d·d·i·t·c·h (9) | Qu·idd·itch (3) | Qu·idd·itch (3) |
 | Expelliarmus | E·x·p·e·l·l·i·a·r·m·u·s (12) | Exp·elli·arm·us (4) | Exp·elli·arm·us (4) |
 
-Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost about the same on the English sentences, but Portuguese takes 46% more tokens than English with the 0.9B and 15% more with the 375B-A23B (3% more with my tokenizer, since every character is one token). My vocabulary comes from plain ASCII text, so it has no à, á, ã, ç, é, ê, ó or ô, and 38 of the 50 Portuguese sentences can't be encoded at all.
+Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost about the same on the English sentences, but Portuguese takes 46% more tokens than English with the 0.9B and 15% more with the 375B-A23B.
 
 ## Credit
 

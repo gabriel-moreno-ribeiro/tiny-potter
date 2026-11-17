@@ -69,8 +69,10 @@ def k2_tokenizer(repo, revision):
     split = lambda name: [p.strip() for p in (tok.decode([i]) for i in ids(' ' + name)) if p.strip()]
     return lambda s: len(ids(s)), split, tok.get_vocab_size()
 
-# my tokenizer is one token per character, so counting is len() and splitting is list()
-counters, splitters, vocab_sizes = {'my tokenizer': len}, {'my tokenizer': list}, {'my tokenizer': len(chars)}
+vocab = set(chars)
+# my tokenizer is one token per character; None means a character isn't in its vocabulary
+my_count = lambda s: len(s) if set(s) <= vocab else None
+counters, splitters, vocab_sizes = {'my tokenizer': my_count}, {'my tokenizer': list}, {'my tokenizer': len(chars)}
 for label, repo, revision in K2_TOKENIZERS:
     counters[label], splitters[label], vocab_sizes[label] = k2_tokenizer(repo, revision)
 
@@ -82,23 +84,27 @@ def table(lead, rows):
         print('| ' + ' | '.join(row) + ' |')
     print()
 
+def total(count, strings):
+    counts = [count(s) for s in strings]
+    return None if None in counts else sum(counts)
+
+fmt = lambda n: 'n/a' if n is None else f'{n:,}'
 counts = [count(text) for count in counters.values()]
-en = [sum(count(e) for e, _ in SENTENCES) for count in counters.values()]
-pt = [sum(count(p) for _, p in SENTENCES) for count in counters.values()]
+en = [total(count, [e for e, _ in SENTENCES]) for count in counters.values()]
+pt = [total(count, [p for _, p in SENTENCES]) for count in counters.values()]
 table([''], [
     ['vocabulary size'] + [f'{v:,}' for v in vocab_sizes.values()],
     ['tokens in input.txt'] + [f'{n:,}' for n in counts],
     ['characters per token'] + [f'{len(text) / n:.2f}' for n in counts],
-    [f'tokens for {len(SENTENCES)} English sentences'] + [f'{n:,}' for n in en],
-    ['tokens for their Portuguese translations'] + [f'{n:,}' for n in pt],
-    ['Portuguese/English tokens'] + [f'{p / e:.2f}' for e, p in zip(en, pt)],
+    [f'tokens for {len(SENTENCES)} English sentences'] + [fmt(n) for n in en],
+    ['tokens for their Portuguese translations'] + [fmt(n) for n in pt],
+    ['Portuguese/English tokens'] + ['n/a' if None in (e, p) else f'{p / e:.2f}' for e, p in zip(en, pt)],
 ])
+missing = sorted(set(''.join(p for _, p in SENTENCES)) - vocab)
+print(f"n/a: my tokenizer only has the {len(chars)} characters of input.txt, so it can't encode {' '.join(missing)}\n")
 
 rows = []
 for name in NAMES:
     pieces = [split(name) for split in splitters.values()]
     rows.append([name] + [f"{'·'.join(p)} ({len(p)})" for p in pieces])
 table(['name'], rows)
-
-missing = sorted(set(''.join(p for _, p in SENTENCES)) - set(chars))
-print(f"Portuguese characters my tokenizer doesn't have: {' '.join(missing)}")
