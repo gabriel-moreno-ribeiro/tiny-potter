@@ -66,14 +66,16 @@ Uncle Verno
 
 ## Comparing with K2's tokenizer
 
-`tokenizer_compare.py` compares my character tokenizer with the tokenizers of MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B) and [K2-Horizon-375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only each model's `tokenizer.json`. The two K2 tokenizers are different: the 375B-A23B one has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash.
+`tokenizer_compare.py` compares my character tokenizer with the tokenizers of MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B) and [K2-Horizon-375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only each model's `tokenizer.json`. The two K2 tokenizers are different: the 375B-A23B one has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash. The Portuguese/English ratio comes from 50 simple English sentences and their Portuguese translations, which are in the script.
 
 |  | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
 |---|---|---|---|
 | vocabulary size | 90 | 64,256 | 250,624 |
 | tokens in input.txt | 6,304,282 | 1,613,313 | 1,472,117 |
 | characters per token | 1.00 | 3.91 | 4.28 |
-| Portuguese/English tokens | 1.06 | 1.48 | 1.12 |
+| tokens for 50 English sentences | 1,682 | 390 | 383 |
+| tokens for their Portuguese translations | 1,739 | 568 | 441 |
+| Portuguese/English tokens | 1.03 | 1.46 | 1.15 |
 
 K2 splits the names the way they appear in the books, after a space.
 
@@ -87,18 +89,7 @@ K2 splits the names the way they appear in the books, after a space.
 | Quidditch | Q·u·i·d·d·i·t·c·h (9) | Qu·idd·itch (3) | Qu·idd·itch (3) |
 | Expelliarmus | E·x·p·e·l·l·i·a·r·m·u·s (12) | Exp·elli·arm·us (4) | Exp·elli·arm·us (4) |
 
-In the sentence table each cell is English / Portuguese tokens.
-
-| English | Portuguese | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
-|---|---|---|---|---|
-| The weather is very cold today. | O tempo está muito frio hoje. | 31 / 29 | 7 / 8 | 7 / 7 |
-| She opened the window and looked outside. | Ela abriu a janela e olhou para fora. | 41 / 37 | 8 / 14 | 8 / 10 |
-| We are going to the market after lunch. | Nós vamos ao mercado depois do almoço. | 39 / 38 | 9 / 11 | 9 / 8 |
-| My brother cannot find his keys. | Meu irmão não consegue encontrar as chaves dele. | 32 / 48 | 7 / 14 | 7 / 10 |
-| The children were happy to see the snow. | As crianças ficaram felizes ao ver a neve. | 40 / 42 | 9 / 12 | 9 / 10 |
-| total |  | 183 / 194 | 40 / 59 | 40 / 45 |
-
-Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost the same on the English sentences, but Portuguese takes 48% more tokens than English with the 0.9B and 12% more with the 375B-A23B (6% more with my tokenizer, since every character is one token). My vocabulary comes from plain ASCII text, so it has no á, ã, ç or ó, and four of the five Portuguese sentences can't be encoded at all.
+Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost about the same on the English sentences, but Portuguese takes 46% more tokens than English with the 0.9B and 15% more with the 375B-A23B (3% more with my tokenizer, since every character is one token). My vocabulary comes from plain ASCII text, so it has no à, á, ã, ç, é, ê, ó or ô, and 38 of the 50 Portuguese sentences can't be encoded at all.
 
 ## Credit
 
