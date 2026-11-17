@@ -1,7 +1,10 @@
 import hashlib
+import html.parser
+import json
 import os
 import tarfile
 import unicodedata
+import urllib.parse
 import urllib.request
 
 from tokenizers import Tokenizer
@@ -205,8 +208,51 @@ def formats():
     rows = [[name, f'`{br}`', f'`{us}`'] + [f'{fmt(count(br))} / {fmt(count(us))}' for count in counters.values()] for name, br, us in FORMATS]
     table(['format', 'Brazil', 'US'], rows)
 
+WIKIPEDIA = [('en', 'Photosynthesis', 1385696147), ('pt', 'Fotossíntese', 73032270)]
+
+class Paragraphs(html.parser.HTMLParser):
+    # keeps the text inside <p>, leaving out reference markers, styles and math markup
+    def __init__(self):
+        super().__init__()
+        self.depth = {'p': 0, 'sup': 0, 'style': 0, 'math': 0}
+        self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.depth:
+            self.depth[tag] += 1
+
+    def handle_endtag(self, tag):
+        if tag in self.depth:
+            self.depth[tag] = max(0, self.depth[tag] - 1)
+        if tag == 'p':
+            self.parts.append('\n')
+
+    def handle_data(self, data):
+        if self.depth['p'] and not (self.depth['sup'] or self.depth['style'] or self.depth['math']):
+            self.parts.append(data)
+
+def wikipedia_text(lang, revid):
+    query = urllib.parse.urlencode({'action': 'parse', 'oldid': revid, 'prop': 'text', 'format': 'json', 'formatversion': 2})
+    request = urllib.request.Request(f'https://{lang}.wikipedia.org/w/api.php?{query}', headers={'User-Agent': 'tokenizer-compare/1.0'})
+    parser = Paragraphs()
+    parser.feed(json.load(urllib.request.urlopen(request, timeout=60))['parse']['text'])
+    return ''.join(parser.parts).strip()
+
+def wikipedia():
+    (en_lang, en_title, en_rev), (pt_lang, pt_title, pt_rev) = WIKIPEDIA
+    en, pt = wikipedia_text(en_lang, en_rev), wikipedia_text(pt_lang, pt_rev)
+    en_counts = [count(en) for count in counters.values()]
+    pt_counts = [count(pt) for count in counters.values()]
+    cell = lambda n, t: 'n/a' if n is None else f'{n:,} ({len(t) / n:.2f})'
+    table(['article', 'characters'], [
+        [f'{en_title} ({en_lang})', f'{len(en):,}'] + [cell(n, en) for n in en_counts],
+        [f'{pt_title} ({pt_lang})', f'{len(pt):,}'] + [cell(n, pt) for n in pt_counts],
+        ['Portuguese/English', f'{len(pt) / len(en):.2f}'] + ['n/a' if None in (e, p) else f'{p / e:.2f}' for e, p in zip(en_counts, pt_counts)],
+    ])
+
 books_and_sentences()
 names()
 languages()
 informal_portuguese()
 formats()
+wikipedia()

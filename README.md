@@ -138,6 +138,16 @@ The format test compares Brazilian and US money, dates, phone numbers and postal
 
 Both K2 tokenizers split these exactly the same way: numbers are cut into chunks of up to three digits from the left, so 2026 becomes 202 and 6, and 99999 becomes 999 and 99. The Brazilian money format costs two extra tokens because R and the space before the number are tokens of their own, and a CEP takes 4 tokens against 2 for a ZIP code. My tokenizer can't do money at all because $ isn't in its vocabulary.
 
+For a long text I used the Wikipedia articles [Photosynthesis](https://en.wikipedia.org/w/index.php?oldid=1385696147) and [Fotossíntese](https://pt.wikipedia.org/w/index.php?oldid=73032270) (CC BY-SA 4.0). The script downloads those exact revisions and keeps only the paragraph text, so nothing from them is in this repo. Cells show the tokens and, in parentheses, characters per token.
+
+| article | characters | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|
+| Photosynthesis (en) | 45,253 | n/a | 9,968 (4.54) | 8,816 (5.13) |
+| Fotossíntese (pt) | 82,070 | n/a | 25,240 (3.25) | 20,906 (3.93) |
+| Portuguese/English | 1.81 | n/a | 2.53 | 2.37 |
+
+The two articles aren't translations of each other, and the Portuguese one has 1.81 times as many characters, so characters per token is the fairer number: English gets 4.54 and 5.13, Portuguese 3.25 and 3.93. That puts Portuguese at about 1.4 times the tokens per character with the 0.9B and 1.3 with the 375B-A23B, close to the 1.43 and 1.26 from the FLORES test.
+
 ## Credit
 
 The architecture and the order of the steps come from Andrej Karpathy's lecture [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and its repo [karpathy/ng-video-lecture](https://github.com/karpathy/ng-video-lecture).
