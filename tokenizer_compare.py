@@ -1,7 +1,9 @@
 from tokenizers import Tokenizer
 
-K2_REPO = 'IFM/K2-Horizon-0.9B'
-K2_REVISION = 'fc5c9dc7c13df2360acee789fca2cd55d439e644'
+K2_TOKENIZERS = [
+    ('K2-Horizon-0.9B', 'IFM/K2-Horizon-0.9B', 'fc5c9dc7c13df2360acee789fca2cd55d439e644'),
+    ('K2-Horizon-375B-A23B', 'IFM/K2-Horizon-375B-A23B', 'bb3bfb4b532488c05e84a090301f8259c68b319c'),
+]
 NAMES = ['Harry', 'Hermione', 'Dumbledore', 'Voldemort', 'Hogwarts', 'Quidditch', 'Expelliarmus']
 SENTENCES = [
     ('The weather is very cold today.', 'O tempo está muito frio hoje.'),
@@ -13,36 +15,46 @@ SENTENCES = [
 
 with open('input.txt', 'r', encoding='utf-8') as f:
     text = f.read()
-chars = sorted(set(text))  # my tokenizer is one token per character, so counts are just len()
+chars = sorted(set(text))
 
-k2 = Tokenizer.from_pretrained(K2_REPO, revision=K2_REVISION)
-k2_ids = lambda s: k2.encode(s, add_special_tokens=False).ids
-
-n_k2 = len(k2_ids(text))
-en_mine = sum(len(en) for en, _ in SENTENCES)
-pt_mine = sum(len(pt) for _, pt in SENTENCES)
-en_k2 = sum(len(k2_ids(en)) for en, _ in SENTENCES)
-pt_k2 = sum(len(k2_ids(pt)) for _, pt in SENTENCES)
-
-print('| | my tokenizer | K2-Horizon-0.9B |')
-print('|---|---|---|')
-print(f'| vocabulary size | {len(chars)} | {k2.get_vocab_size():,} |')
-print(f'| tokens in input.txt | {len(text):,} | {n_k2:,} |')
-print(f'| characters per token | 1.00 | {len(text) / n_k2:.2f} |')
-print(f'| Portuguese/English tokens | {pt_mine / en_mine:.2f} | {pt_k2 / en_k2:.2f} |')
-
-print('\n| name | my tokenizer | K2-Horizon-0.9B |')
-print('|---|---|---|')
-for name in NAMES:
+def k2_tokenizer(repo, revision):
+    tok = Tokenizer.from_pretrained(repo, revision=revision)
+    ids = lambda s: tok.encode(s, add_special_tokens=False).ids
     # names mostly come after a space in the books, and K2 merges that space into the first piece
-    pieces = [p.strip() for p in (k2.decode([i]) for i in k2_ids(' ' + name)) if p.strip()]
-    print(f"| {name} | {'·'.join(name)} ({len(name)}) | {'·'.join(pieces)} ({len(pieces)}) |")
+    split = lambda name: [p.strip() for p in (tok.decode([i]) for i in ids(' ' + name)) if p.strip()]
+    return lambda s: len(ids(s)), split, tok.get_vocab_size()
 
-print('\n| English | Portuguese | my EN | my PT | K2 EN | K2 PT |')
-print('|---|---|---|---|---|---|')
-for en, pt in SENTENCES:
-    print(f'| {en} | {pt} | {len(en)} | {len(pt)} | {len(k2_ids(en))} | {len(k2_ids(pt))} |')
-print(f'| total | | {en_mine} | {pt_mine} | {en_k2} | {pt_k2} |')
+# my tokenizer is one token per character, so counting is len() and splitting is list()
+counters, splitters, vocab_sizes = {'my tokenizer': len}, {'my tokenizer': list}, {'my tokenizer': len(chars)}
+for label, repo, revision in K2_TOKENIZERS:
+    counters[label], splitters[label], vocab_sizes[label] = k2_tokenizer(repo, revision)
 
-missing = sorted(set(''.join(pt for _, pt in SENTENCES)) - set(chars))
-print(f"\nPortuguese characters my tokenizer doesn't have: {' '.join(missing)}")
+def table(lead, rows):
+    header = lead + list(counters)
+    print('| ' + ' | '.join(header) + ' |')
+    print('|' + '---|' * len(header))
+    for row in rows:
+        print('| ' + ' | '.join(row) + ' |')
+    print()
+
+counts = [count(text) for count in counters.values()]
+en = [sum(count(e) for e, _ in SENTENCES) for count in counters.values()]
+pt = [sum(count(p) for _, p in SENTENCES) for count in counters.values()]
+table([''], [
+    ['vocabulary size'] + [f'{v:,}' for v in vocab_sizes.values()],
+    ['tokens in input.txt'] + [f'{n:,}' for n in counts],
+    ['characters per token'] + [f'{len(text) / n:.2f}' for n in counts],
+    ['Portuguese/English tokens'] + [f'{p / e:.2f}' for e, p in zip(en, pt)],
+])
+
+rows = []
+for name in NAMES:
+    pieces = [split(name) for split in splitters.values()]
+    rows.append([name] + [f"{'·'.join(p)} ({len(p)})" for p in pieces])
+table(['name'], rows)
+
+rows = [[e, p] + [f'{count(e)} / {count(p)}' for count in counters.values()] for e, p in SENTENCES]
+table(['English', 'Portuguese'], rows + [['total', ''] + [f'{a} / {b}' for a, b in zip(en, pt)]])
+
+missing = sorted(set(''.join(p for _, p in SENTENCES)) - set(chars))
+print(f"Portuguese characters my tokenizer doesn't have: {' '.join(missing)}")

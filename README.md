@@ -66,37 +66,39 @@ Uncle Verno
 
 ## Comparing with K2's tokenizer
 
-`tokenizer_compare.py` compares my character tokenizer with the one from MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only K2's `tokenizer.json`. The 0.9B and the [375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B) flagship don't share a tokenizer: the flagship's tokenizer has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash.
+`tokenizer_compare.py` compares my character tokenizer with the tokenizers of MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B) and [K2-Horizon-375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only each model's `tokenizer.json`. The two K2 tokenizers are different: the 375B-A23B one has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash.
 
-| | my tokenizer | K2-Horizon-0.9B |
-|---|---|---|
-| vocabulary size | 90 | 64,256 |
-| tokens in input.txt | 6,304,282 | 1,613,313 |
-| characters per token | 1.00 | 3.91 |
-| Portuguese/English tokens | 1.06 | 1.48 |
+|  | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|
+| vocabulary size | 90 | 64,256 | 250,624 |
+| tokens in input.txt | 6,304,282 | 1,613,313 | 1,472,117 |
+| characters per token | 1.00 | 3.91 | 4.28 |
+| Portuguese/English tokens | 1.06 | 1.48 | 1.12 |
 
 K2 splits the names the way they appear in the books, after a space.
 
-| name | my tokenizer | K2-Horizon-0.9B |
-|---|---|---|
-| Harry | H·a·r·r·y (5) | Harry (1) |
-| Hermione | H·e·r·m·i·o·n·e (8) | Herm·ione (2) |
-| Dumbledore | D·u·m·b·l·e·d·o·r·e (10) | D·umbled·ore (3) |
-| Voldemort | V·o·l·d·e·m·o·r·t (9) | V·old·em·ort (4) |
-| Hogwarts | H·o·g·w·a·r·t·s (8) | H·og·w·arts (4) |
-| Quidditch | Q·u·i·d·d·i·t·c·h (9) | Qu·idd·itch (3) |
-| Expelliarmus | E·x·p·e·l·l·i·a·r·m·u·s (12) | Exp·elli·arm·us (4) |
+| name | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|
+| Harry | H·a·r·r·y (5) | Harry (1) | Harry (1) |
+| Hermione | H·e·r·m·i·o·n·e (8) | Herm·ione (2) | Hermione (1) |
+| Dumbledore | D·u·m·b·l·e·d·o·r·e (10) | D·umbled·ore (3) | D·umbled·ore (3) |
+| Voldemort | V·o·l·d·e·m·o·r·t (9) | V·old·em·ort (4) | V·old·em·ort (4) |
+| Hogwarts | H·o·g·w·a·r·t·s (8) | H·og·w·arts (4) | Hogwarts (1) |
+| Quidditch | Q·u·i·d·d·i·t·c·h (9) | Qu·idd·itch (3) | Qu·idd·itch (3) |
+| Expelliarmus | E·x·p·e·l·l·i·a·r·m·u·s (12) | Exp·elli·arm·us (4) | Exp·elli·arm·us (4) |
 
-| English | Portuguese | my EN | my PT | K2 EN | K2 PT |
-|---|---|---|---|---|---|
-| The weather is very cold today. | O tempo está muito frio hoje. | 31 | 29 | 7 | 8 |
-| She opened the window and looked outside. | Ela abriu a janela e olhou para fora. | 41 | 37 | 8 | 14 |
-| We are going to the market after lunch. | Nós vamos ao mercado depois do almoço. | 39 | 38 | 9 | 11 |
-| My brother cannot find his keys. | Meu irmão não consegue encontrar as chaves dele. | 32 | 48 | 7 | 14 |
-| The children were happy to see the snow. | As crianças ficaram felizes ao ver a neve. | 40 | 42 | 9 | 12 |
-| total | | 183 | 194 | 40 | 59 |
+In the sentence table each cell is English / Portuguese tokens.
 
-K2 needs about a quarter of the tokens for the books, but of the seven names only Harry is a single token; the others break into 2 to 4 pieces. With K2 the Portuguese sentences take 48% more tokens than the English ones, while with my tokenizer they are only 6% longer because every character costs one token. My vocabulary comes from plain ASCII text, so it has no á, ã, ç or ó, and four of the five Portuguese sentences can't be encoded at all.
+| English | Portuguese | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|
+| The weather is very cold today. | O tempo está muito frio hoje. | 31 / 29 | 7 / 8 | 7 / 7 |
+| She opened the window and looked outside. | Ela abriu a janela e olhou para fora. | 41 / 37 | 8 / 14 | 8 / 10 |
+| We are going to the market after lunch. | Nós vamos ao mercado depois do almoço. | 39 / 38 | 9 / 11 | 9 / 8 |
+| My brother cannot find his keys. | Meu irmão não consegue encontrar as chaves dele. | 32 / 48 | 7 / 14 | 7 / 10 |
+| The children were happy to see the snow. | As crianças ficaram felizes ao ver a neve. | 40 / 42 | 9 / 12 | 9 / 10 |
+| total |  | 183 / 194 | 40 / 59 | 40 / 45 |
+
+Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost the same on the English sentences, but Portuguese takes 48% more tokens than English with the 0.9B and 12% more with the 375B-A23B (6% more with my tokenizer, since every character is one token). My vocabulary comes from plain ASCII text, so it has no á, ã, ç or ó, and four of the five Portuguese sentences can't be encoded at all.
 
 ## Credit
 
