@@ -1,3 +1,5 @@
+import torch
+
 with open('input.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
@@ -20,3 +22,14 @@ sentence = "Mischief managed."
 print(encode(sentence))
 print(decode(encode(sentence)))
 assert decode(encode(sentence)) == sentence
+
+# the whole text as one long tensor of integers
+data = torch.tensor(encode(text), dtype=torch.long)
+print(data.shape, data.dtype)
+print(data[:1000])
+
+# first 90% is train, the rest is validation
+n = int(0.9 * len(data))
+train_data = data[:n]
+val_data = data[n:]
+print(len(train_data), len(val_data))
