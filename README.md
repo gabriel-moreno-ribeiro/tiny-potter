@@ -66,7 +66,7 @@ Uncle Verno
 
 ## Comparing with K2's tokenizer
 
-`tokenizer_compare.py` compares my character tokenizer with the tokenizers of MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B) and [K2-Horizon-375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only each model's `tokenizer.json`. The two K2 tokenizers are different: the 375B-A23B one has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash. The Portuguese/English ratio comes from 50 simple English sentences and their Portuguese translations, which are in the script.
+`tokenizer_compare.py` compares my character tokenizer with the tokenizers of MBZUAI's [K2-Horizon-0.9B](https://huggingface.co/IFM/K2-Horizon-0.9B) and [K2-Horizon-375B-A23B](https://huggingface.co/IFM/K2-Horizon-375B-A23B). Run it with `pip install tokenizers` and `python tokenizer_compare.py`; it downloads only each model's `tokenizer.json`. With `pip install matplotlib`, `python make_charts.py` redraws the charts in `charts/` from the same measurements. The two K2 tokenizers are different: the 375B-A23B one has 250,624 tokens instead of 64,256, and none of the tokenizer files have the same hash. The Portuguese/English ratio comes from 50 simple English sentences and their Portuguese translations, which are in the script.
 
 |  | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
 |---|---|---|---|
@@ -79,6 +79,10 @@ Uncle Verno
 
 My tokenizer gets n/a for Portuguese because its vocabulary is only the 90 plain ASCII characters of input.txt, so it can't encode à, á, ã, ç, é, ê, ó or ô.
 
+![Bar chart of characters per token on input.txt](charts/input_chars_per_token.png)
+
+Each K2 token covers about four characters of the books, and each of mine covers one.
+
 K2 splits the names the way they appear in the books, after a space.
 
 | name | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
@@ -90,6 +94,10 @@ K2 splits the names the way they appear in the books, after a space.
 | Hogwarts | H·o·g·w·a·r·t·s (8) | H·og·w·arts (4) | Hogwarts (1) |
 | Quidditch | Q·u·i·d·d·i·t·c·h (9) | Qu·idd·itch (3) | Qu·idd·itch (3) |
 | Expelliarmus | E·x·p·e·l·l·i·a·r·m·u·s (12) | Exp·elli·arm·us (4) | Exp·elli·arm·us (4) |
+
+![Bar chart of tokens per Harry Potter name](charts/harry_potter_names.png)
+
+My tokenizer spends one token per letter, so its bar is just the length of each name.
 
 Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost about the same on the English sentences, but Portuguese takes 46% more tokens than English with the 0.9B and 15% more with the 375B-A23B.
 
@@ -104,6 +112,10 @@ For the language test I took the first 200 sentences of the [FLORES-200](https:/
 | Hindi | 26,550 | n/a | 9,392 (1.60) | 7,390 (1.37) |
 | Chinese | 9,049 | n/a | 8,040 (1.37) | 6,285 (1.16) |
 | Indonesian | 29,092 | n/a | 7,832 (1.33) | 6,015 (1.11) |
+
+![Bar chart of FLORES-200 tokens relative to English](charts/flores_ratio_to_english.png)
+
+Bars above the dashed line mean the language needs more tokens than English for the same sentences.
 
 The 375B-A23B needs fewer tokens than the 0.9B in every language; its ratios to English go from 1.06 to 1.37, the 0.9B's from 1.16 to 1.60. Arabic is the cheapest language after English for both; the 0.9B's tokenizer manifest says it was built from a 64k Jais tokenizer (Jais is an Arabic-English model). My tokenizer gets n/a even for English, because 11 of the 200 sentences contain characters like —, $, ’ or ö.
 
@@ -125,6 +137,10 @@ Brazilian place names, split the same way as the names above:
 | Juazeiro do Norte | J·u·a·z·e·i·r·o· ·d·o· ·N·o·r·t·e (17) | Ju·aze·iro·do·Norte (5) | Ju·aze·iro·do·Norte (5) |
 | Florianópolis | n/a | Flor·ian·ó·pol·is (5) | Florian·ópolis (2) |
 
+![Bar chart of tokens per Brazilian place name](charts/brazilian_places.png)
+
+My tokenizer has no bar for Missão Velha and Florianópolis because it can't encode ã or ó.
+
 The informal sentences have 18% fewer characters than the formal ones but only 7% fewer tokens with the 0.9B and 2% fewer with the 375B-A23B. Removing the accents makes both K2 tokenizers slightly worse (296 and 249 tokens instead of 293 and 238), and the version without accents is the only one my tokenizer can read. Both keep Salvador whole, and the 375B-A23B also keeps Fortaleza and cuts Florianópolis into two pieces instead of five; Missão Velha and Juazeiro do Norte break up the same way in both.
 
 The format test compares Brazilian and US money, dates, phone numbers and postal codes; each cell is Brazil / US tokens.
@@ -135,6 +151,10 @@ The format test compares Brazilian and US money, dates, phone numbers and postal
 | date | `17/11/2026` | `11/17/2026` | 10 / 10 | 6 / 6 | 6 / 6 |
 | phone | `(71) 99999-9999` | `(555) 123-4567` | 15 / 14 | 9 / 8 | 9 / 8 |
 | postal code | `40140-650` | `90210` | 9 / 5 | 4 / 2 | 4 / 2 |
+
+![Bar chart of Brazilian and US format tokens](charts/formats_brazil_vs_us.png)
+
+Brazilian formats (solid) take as many tokens as the US ones (hatched) or more.
 
 Both K2 tokenizers split these exactly the same way: numbers are cut into chunks of up to three digits from the left, so 2026 becomes 202 and 6, and 99999 becomes 999 and 99. The Brazilian money format costs two extra tokens because R and the space before the number are tokens of their own, and a CEP takes 4 tokens against 2 for a ZIP code. My tokenizer can't do money at all because $ isn't in its vocabulary.
 
@@ -154,6 +174,10 @@ The last test is code and math: a three-line Python function (`is_palindrome`) a
 |---|---|---|---|---|
 | Python function | 116 | 116 | 34 | 29 |
 | LaTeX formula | 38 | 38 | 21 | 21 |
+
+![Bar chart of characters per token on code and math](charts/code_and_math_chars_per_token.png)
+
+Higher bars mean more characters fit in each token.
 
 The 375B-A23B needs 29 tokens for the function against 34 for the 0.9B, mostly because it keeps `_palindrome` and `[::-` whole. In both, a four-space indent costs one token. The formula is the expensive part: both K2 tokenizers split it the same way into 21 tokens, under two characters per token, because each command like `\frac` becomes two tokens, the backslash (with the space before it) and the name.
 
