@@ -3,14 +3,17 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 # hyperparameters
-batch_size = 32  # how many independent sequences we process in parallel
-block_size = 8  # maximum context length for predictions
+batch_size = 64  # how many independent sequences we process in parallel
+block_size = 256  # maximum context length for predictions
 max_iters = 5000
 eval_interval = 500
-learning_rate = 1e-3  # self-attention can't take a learning rate as high as the bigram's
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+learning_rate = 3e-4  # lower again, the network is much bigger now
+device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
 eval_iters = 200
-n_embd = 32
+n_embd = 384
+n_head = 6
+n_layer = 6
+dropout = 0.2
 # ------------
 
 torch.manual_seed(1337)
@@ -66,6 +69,7 @@ class Head(nn.Module):
         self.query = nn.Linear(n_embd, head_size, bias=False)
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         B, T, C = x.shape
@@ -75,6 +79,7 @@ class Head(nn.Module):
         wei = q @ k.transpose(-2, -1) * k.shape[-1]**-0.5  # (B,T,hs) @ (B,hs,T) -> (B,T,T)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))  # no looking at the future
         wei = F.softmax(wei, dim=-1)  # (B,T,T)
+        wei = self.dropout(wei)  # randomly stop some tokens from communicating
         v = self.value(x)  # (B,T,hs)
         out = wei @ v  # (B,T,T) @ (B,T,hs) -> (B,T,hs)
         return out
@@ -86,10 +91,11 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
         self.proj = nn.Linear(head_size * num_heads, n_embd)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.proj(out)  # projection back into the residual pathway
+        out = self.dropout(self.proj(out))  # projection back into the residual pathway
         return out
 
 class FeedForward(nn.Module):
@@ -101,6 +107,7 @@ class FeedForward(nn.Module):
             nn.Linear(n_embd, 4 * n_embd),  # the paper's inner layer is 4x wider
             nn.ReLU(),
             nn.Linear(4 * n_embd, n_embd),  # projection back into the residual pathway
+            nn.Dropout(dropout),
         )
 
     def forward(self, x):
@@ -129,11 +136,7 @@ class GPTLanguageModel(nn.Module):
         super().__init__()
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(
-            Block(n_embd, n_head=4),
-            Block(n_embd, n_head=4),
-            Block(n_embd, n_head=4),
-        )
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
@@ -172,6 +175,7 @@ class GPTLanguageModel(nn.Module):
 
 model = GPTLanguageModel()
 m = model.to(device)
+print(f"{sum(p.numel() for p in m.parameters())/1e6:.2f}M parameters on {device}")
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
