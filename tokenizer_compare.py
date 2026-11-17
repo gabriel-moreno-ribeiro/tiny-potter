@@ -129,7 +129,7 @@ FLORES_LANGUAGES = {
     'Hindi': 'hin_Deva', 'Chinese': 'zho_Hans', 'Indonesian': 'ind_Latn',
 }
 
-def languages():
+def flores_sentences():
     path = 'flores200_dataset.tar.gz'
     if not os.path.exists(path):
         urllib.request.urlretrieve(FLORES_URL, path)
@@ -137,7 +137,10 @@ def languages():
         assert hashlib.sha256(f.read()).hexdigest() == FLORES_SHA256, f'{path} is not the expected file, delete it and run again'
     with tarfile.open(path) as tar:
         read = lambda code: tar.extractfile(f'./flores200_dataset/devtest/{code}.devtest').read().decode('utf-8')
-        sentences = {lang: read(code).splitlines()[:200] for lang, code in FLORES_LANGUAGES.items()}
+        return {lang: read(code).splitlines()[:200] for lang, code in FLORES_LANGUAGES.items()}
+
+def languages():
+    sentences = flores_sentences()
     english = [total(count, sentences['English']) for count in counters.values()]
     rows = []
     for lang, lines in sentences.items():
@@ -260,10 +263,11 @@ def code_and_math():
     rows = [[label, f'{len(s):,}'] + [fmt(count(s)) for count in counters.values()] for label, s in [('Python function', CODE), ('LaTeX formula', LATEX)]]
     table(['', 'characters'], rows)
 
-books_and_sentences()
-names()
-languages()
-informal_portuguese()
-formats()
-wikipedia()
-code_and_math()
+if __name__ == '__main__':  # make_charts.py imports this file for its tokenizers and test data
+    books_and_sentences()
+    names()
+    languages()
+    informal_portuguese()
+    formats()
+    wikipedia()
+    code_and_math()
