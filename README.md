@@ -93,6 +93,20 @@ K2 splits the names the way they appear in the books, after a space.
 
 Both K2 tokenizers need about a quarter of the tokens for the books, and the 375B-A23B one keeps Harry, Hermione and Hogwarts whole where the 0.9B keeps only Harry. They cost about the same on the English sentences, but Portuguese takes 46% more tokens than English with the 0.9B and 15% more with the 375B-A23B.
 
+For the language test I took the first 200 sentences of the [FLORES-200](https://github.com/facebookresearch/flores) devtest set, which has the same sentences in every language. The script downloads Meta's archive (CC BY-SA 4.0) and caches it as `flores200_dataset.tar.gz`, so none of the text is in this repo. Each K2 cell shows the tokens and, in parentheses, the ratio to English.
+
+| language | characters | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|
+| English | 26,763 | n/a | 5,871 | 5,396 |
+| Portuguese | 29,300 | n/a | 8,380 (1.43) | 6,816 (1.26) |
+| Spanish | 31,773 | n/a | 8,905 (1.52) | 7,314 (1.36) |
+| Arabic | 23,571 | n/a | 6,826 (1.16) | 5,693 (1.06) |
+| Hindi | 26,550 | n/a | 9,392 (1.60) | 7,390 (1.37) |
+| Chinese | 9,049 | n/a | 8,040 (1.37) | 6,285 (1.16) |
+| Indonesian | 29,092 | n/a | 7,832 (1.33) | 6,015 (1.11) |
+
+The 375B-A23B needs fewer tokens than the 0.9B in every language; its ratios to English go from 1.06 to 1.37, the 0.9B's from 1.16 to 1.60. Arabic is the cheapest language after English for both; the 0.9B's tokenizer manifest says it was built from a 64k Jais tokenizer (Jais is an Arabic-English model). My tokenizer gets n/a even for English, because 11 of the 200 sentences contain characters like —, $, ’ or ö.
+
 ## Credit
 
 The architecture and the order of the steps come from Andrej Karpathy's lecture [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and its repo [karpathy/ng-video-lecture](https://github.com/karpathy/ng-video-lecture).

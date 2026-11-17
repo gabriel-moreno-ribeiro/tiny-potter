@@ -1,3 +1,8 @@
+import hashlib
+import os
+import tarfile
+import urllib.request
+
 from tokenizers import Tokenizer
 
 K2_TOKENIZERS = [
@@ -113,5 +118,32 @@ NAMES = ['Harry', 'Hermione', 'Dumbledore', 'Voldemort', 'Hogwarts', 'Quidditch'
 def names():
     table(['name'], [[name] + [fmt_pieces(split(name)) for split in splitters.values()] for name in NAMES])
 
+FLORES_URL = 'https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz'
+FLORES_SHA256 = 'b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6'
+FLORES_LANGUAGES = {
+    'English': 'eng_Latn', 'Portuguese': 'por_Latn', 'Spanish': 'spa_Latn', 'Arabic': 'arb_Arab',
+    'Hindi': 'hin_Deva', 'Chinese': 'zho_Hans', 'Indonesian': 'ind_Latn',
+}
+
+def languages():
+    path = 'flores200_dataset.tar.gz'
+    if not os.path.exists(path):
+        urllib.request.urlretrieve(FLORES_URL, path)
+    with open(path, 'rb') as f:
+        assert hashlib.sha256(f.read()).hexdigest() == FLORES_SHA256, f'{path} is not the expected file, delete it and run again'
+    with tarfile.open(path) as tar:
+        read = lambda code: tar.extractfile(f'./flores200_dataset/devtest/{code}.devtest').read().decode('utf-8')
+        sentences = {lang: read(code).splitlines()[:200] for lang, code in FLORES_LANGUAGES.items()}
+    english = [total(count, sentences['English']) for count in counters.values()]
+    rows = []
+    for lang, lines in sentences.items():
+        cells = []
+        for count, en in zip(counters.values(), english):
+            n = total(count, lines)
+            cells.append(fmt(n) + ('' if lang == 'English' or None in (n, en) else f' ({n / en:.2f})'))
+        rows.append([lang, f'{sum(map(len, lines)):,}'] + cells)
+    table(['language', 'characters'], rows)
+
 books_and_sentences()
 names()
+languages()
