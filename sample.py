@@ -11,7 +11,7 @@ if unknown:
 
 model = GPTLanguageModel().to(device)
 model.load_state_dict(torch.load('model.pt', map_location=device))
-model.eval()  # turns dropout off
+model.eval()
 
 idx = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
 with torch.no_grad():

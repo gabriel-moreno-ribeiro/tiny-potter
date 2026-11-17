@@ -3,14 +3,13 @@ from torch.nn import functional as F
 
 # toy example: we want x[b, t] to become the mean of x[b, :t+1]
 torch.manual_seed(1337)
-B, T, C = 4, 8, 2  # batch, time, channels
+B, T, C = 4, 8, 2
 x = torch.randn(B, T, C)
 
-# version 1: for loops
-xbow = torch.zeros((B, T, C))  # bow = bag of words
+xbow = torch.zeros((B, T, C))
 for b in range(B):
     for t in range(T):
-        xprev = x[b, :t+1]  # (t,C)
+        xprev = x[b, :t+1]
         xbow[b, t] = torch.mean(xprev, 0)
 print(x[0])
 print(xbow[0])
@@ -23,13 +22,11 @@ b = torch.randint(0, 10, (3, 2)).float()
 c = a @ b
 print('a=', a, 'b=', b, 'c=', c, sep='\n')
 
-# version 2: matrix multiply with averaging weights
 wei = torch.tril(torch.ones(T, T))
 wei = wei / wei.sum(1, keepdim=True)
 xbow2 = wei @ x  # (T,T) @ (B,T,C) -> (B,T,C)
 assert torch.allclose(xbow, xbow2)
 
-# version 3: softmax over a tril mask
 tril = torch.tril(torch.ones(T, T))
 wei = torch.zeros((T, T))
 wei = wei.masked_fill(tril == 0, float('-inf'))  # a token can't look at the future
