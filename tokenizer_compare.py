@@ -4,7 +4,42 @@ K2_TOKENIZERS = [
     ('K2-Horizon-0.9B', 'IFM/K2-Horizon-0.9B', 'fc5c9dc7c13df2360acee789fca2cd55d439e644'),
     ('K2-Horizon-375B-A23B', 'IFM/K2-Horizon-375B-A23B', 'bb3bfb4b532488c05e84a090301f8259c68b319c'),
 ]
-NAMES = ['Harry', 'Hermione', 'Dumbledore', 'Voldemort', 'Hogwarts', 'Quidditch', 'Expelliarmus']
+
+with open('input.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+chars = sorted(set(text))
+vocab = set(chars)
+
+def k2_tokenizer(repo, revision):
+    tok = Tokenizer.from_pretrained(repo, revision=revision)
+    ids = lambda s: tok.encode(s, add_special_tokens=False).ids
+    # names mostly come after a space in the books, and K2 merges that space into the first piece
+    split = lambda name: [p.strip() for p in (tok.decode([i]) for i in ids(' ' + name)) if p.strip()]
+    return lambda s: len(ids(s)), split, tok.get_vocab_size()
+
+# my tokenizer is one token per character; None means a character isn't in its vocabulary
+fits = lambda s: set(s) <= vocab
+counters = {'my tokenizer': lambda s: len(s) if fits(s) else None}
+splitters = {'my tokenizer': lambda s: list(s) if fits(s) else None}
+vocab_sizes = {'my tokenizer': len(chars)}
+for label, repo, revision in K2_TOKENIZERS:
+    counters[label], splitters[label], vocab_sizes[label] = k2_tokenizer(repo, revision)
+
+def table(lead, rows):
+    header = lead + list(counters)
+    print('| ' + ' | '.join(header) + ' |')
+    print('|' + '---|' * len(header))
+    for row in rows:
+        print('| ' + ' | '.join(row) + ' |')
+    print()
+
+def total(count, strings):
+    counts = [count(s) for s in strings]
+    return None if None in counts else sum(counts)
+
+fmt = lambda n: 'n/a' if n is None else f'{n:,}'
+fmt_pieces = lambda p: 'n/a' if p is None else f"{'·'.join(p)} ({len(p)})"
+
 SENTENCES = [
     ('The weather is very cold today.', 'O tempo está muito frio hoje.'),
     ('She opened the window and looked outside.', 'Ela abriu a janela e olhou para fora.'),
@@ -58,53 +93,25 @@ SENTENCES = [
     ('We are very tired after the long trip.', 'Estamos muito cansados depois da longa viagem.'),
 ]
 
-with open('input.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-chars = sorted(set(text))
+def books_and_sentences():
+    counts = [count(text) for count in counters.values()]
+    en = [total(count, [e for e, _ in SENTENCES]) for count in counters.values()]
+    pt = [total(count, [p for _, p in SENTENCES]) for count in counters.values()]
+    table([''], [
+        ['vocabulary size'] + [f'{v:,}' for v in vocab_sizes.values()],
+        ['tokens in input.txt'] + [f'{n:,}' for n in counts],
+        ['characters per token'] + [f'{len(text) / n:.2f}' for n in counts],
+        [f'tokens for {len(SENTENCES)} English sentences'] + [fmt(n) for n in en],
+        ['tokens for their Portuguese translations'] + [fmt(n) for n in pt],
+        ['Portuguese/English tokens'] + ['n/a' if None in (e, p) else f'{p / e:.2f}' for e, p in zip(en, pt)],
+    ])
+    missing = sorted(set(''.join(p for _, p in SENTENCES)) - vocab)
+    print(f"n/a: my tokenizer only has the {len(chars)} characters of input.txt, so it can't encode {' '.join(missing)}\n")
 
-def k2_tokenizer(repo, revision):
-    tok = Tokenizer.from_pretrained(repo, revision=revision)
-    ids = lambda s: tok.encode(s, add_special_tokens=False).ids
-    # names mostly come after a space in the books, and K2 merges that space into the first piece
-    split = lambda name: [p.strip() for p in (tok.decode([i]) for i in ids(' ' + name)) if p.strip()]
-    return lambda s: len(ids(s)), split, tok.get_vocab_size()
+NAMES = ['Harry', 'Hermione', 'Dumbledore', 'Voldemort', 'Hogwarts', 'Quidditch', 'Expelliarmus']
 
-vocab = set(chars)
-# my tokenizer is one token per character; None means a character isn't in its vocabulary
-my_count = lambda s: len(s) if set(s) <= vocab else None
-counters, splitters, vocab_sizes = {'my tokenizer': my_count}, {'my tokenizer': list}, {'my tokenizer': len(chars)}
-for label, repo, revision in K2_TOKENIZERS:
-    counters[label], splitters[label], vocab_sizes[label] = k2_tokenizer(repo, revision)
+def names():
+    table(['name'], [[name] + [fmt_pieces(split(name)) for split in splitters.values()] for name in NAMES])
 
-def table(lead, rows):
-    header = lead + list(counters)
-    print('| ' + ' | '.join(header) + ' |')
-    print('|' + '---|' * len(header))
-    for row in rows:
-        print('| ' + ' | '.join(row) + ' |')
-    print()
-
-def total(count, strings):
-    counts = [count(s) for s in strings]
-    return None if None in counts else sum(counts)
-
-fmt = lambda n: 'n/a' if n is None else f'{n:,}'
-counts = [count(text) for count in counters.values()]
-en = [total(count, [e for e, _ in SENTENCES]) for count in counters.values()]
-pt = [total(count, [p for _, p in SENTENCES]) for count in counters.values()]
-table([''], [
-    ['vocabulary size'] + [f'{v:,}' for v in vocab_sizes.values()],
-    ['tokens in input.txt'] + [f'{n:,}' for n in counts],
-    ['characters per token'] + [f'{len(text) / n:.2f}' for n in counts],
-    [f'tokens for {len(SENTENCES)} English sentences'] + [fmt(n) for n in en],
-    ['tokens for their Portuguese translations'] + [fmt(n) for n in pt],
-    ['Portuguese/English tokens'] + ['n/a' if None in (e, p) else f'{p / e:.2f}' for e, p in zip(en, pt)],
-])
-missing = sorted(set(''.join(p for _, p in SENTENCES)) - vocab)
-print(f"n/a: my tokenizer only has the {len(chars)} characters of input.txt, so it can't encode {' '.join(missing)}\n")
-
-rows = []
-for name in NAMES:
-    pieces = [split(name) for split in splitters.values()]
-    rows.append([name] + [f"{'·'.join(p)} ({len(p)})" for p in pieces])
-table(['name'], rows)
+books_and_sentences()
+names()
