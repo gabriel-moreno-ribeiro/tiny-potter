@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+from torch.nn import functional as F
 
 with open('input.txt', 'r', encoding='utf-8') as f:
     text = f.read()
@@ -59,3 +61,43 @@ print('inputs:', xb.shape)
 print(xb)
 print('targets:', yb.shape)
 print(yb)
+
+class BigramLanguageModel(nn.Module):
+
+    def __init__(self, vocab_size):
+        super().__init__()
+        # each token reads the logits for the next token straight from a lookup table
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
+    def forward(self, idx, targets=None):
+        # idx and targets are both (B,T) tensors of integers
+        logits = self.token_embedding_table(idx)  # (B,T,C)
+
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, idx, max_new_tokens):
+        # idx is (B,T), the indices of the current context
+        for _ in range(max_new_tokens):
+            logits, loss = self(idx)
+            logits = logits[:, -1, :]  # only the last time step, (B,C)
+            probs = F.softmax(logits, dim=-1)  # (B,C)
+            idx_next = torch.multinomial(probs, num_samples=1)  # (B,1)
+            idx = torch.cat((idx, idx_next), dim=1)  # (B,T+1)
+        return idx
+
+m = BigramLanguageModel(vocab_size)
+logits, loss = m(xb, yb)
+print(logits.shape)
+print(loss)  # should be close to -ln(1/vocab_size)
+
+# generate before any training, starting from index 0 (a newline)
+idx = torch.zeros((1, 1), dtype=torch.long)
+print(decode(m.generate(idx, max_new_tokens=100)[0].tolist()))
