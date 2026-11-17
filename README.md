@@ -127,6 +127,17 @@ Brazilian place names, split the same way as the names above:
 
 The informal sentences have 18% fewer characters than the formal ones but only 7% fewer tokens with the 0.9B and 2% fewer with the 375B-A23B. Removing the accents makes both K2 tokenizers slightly worse (296 and 249 tokens instead of 293 and 238), and the version without accents is the only one my tokenizer can read. Both keep Salvador whole, and the 375B-A23B also keeps Fortaleza and cuts Florianópolis into two pieces instead of five; Missão Velha and Juazeiro do Norte break up the same way in both.
 
+The format test compares Brazilian and US money, dates, phone numbers and postal codes; each cell is Brazil / US tokens.
+
+| format | Brazil | US | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|---|
+| money | `R$ 1.234,56` | `$1,234.56` | n/a / n/a | 8 / 6 | 8 / 6 |
+| date | `17/11/2026` | `11/17/2026` | 10 / 10 | 6 / 6 | 6 / 6 |
+| phone | `(71) 99999-9999` | `(555) 123-4567` | 15 / 14 | 9 / 8 | 9 / 8 |
+| postal code | `40140-650` | `90210` | 9 / 5 | 4 / 2 | 4 / 2 |
+
+Both K2 tokenizers split these exactly the same way: numbers are cut into chunks of up to three digits from the left, so 2026 becomes 202 and 6, and 99999 becomes 999 and 99. The Brazilian money format costs two extra tokens because R and the space before the number are tokens of their own, and a CEP takes 4 tokens against 2 for a ZIP code. My tokenizer can't do money at all because $ isn't in its vocabulary.
+
 ## Credit
 
 The architecture and the order of the steps come from Andrej Karpathy's lecture [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and its repo [karpathy/ng-video-lecture](https://github.com/karpathy/ng-video-lecture).

@@ -194,7 +194,19 @@ def informal_portuguese():
     table([f'{len(INFORMAL_FORMAL)} sentences', 'characters'], rows)
     table(['place'], [[place] + [fmt_pieces(split(place)) for split in splitters.values()] for place in PLACES])
 
+FORMATS = [
+    ('money', 'R$ 1.234,56', '$1,234.56'),
+    ('date', '17/11/2026', '11/17/2026'),
+    ('phone', '(71) 99999-9999', '(555) 123-4567'),
+    ('postal code', '40140-650', '90210'),
+]
+
+def formats():
+    rows = [[name, f'`{br}`', f'`{us}`'] + [f'{fmt(count(br))} / {fmt(count(us))}' for count in counters.values()] for name, br, us in FORMATS]
+    table(['format', 'Brazil', 'US'], rows)
+
 books_and_sentences()
 names()
 languages()
 informal_portuguese()
+formats()
