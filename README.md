@@ -35,7 +35,7 @@ python sample.py "Harry looked at"  # continues a prompt with the saved model
 | eval_interval | 500 |
 | eval_iters | 200 |
 
-These are the values from the end of the lecture, 10.81M parameters in total. The final run ended at train 1.08 / val 1.18.
+These are the values from the end of the lecture. The model has 10.808154M parameters, and the final run ended at train 1.08 / val 1.18.
 
 ## Validation loss at each stage
 
