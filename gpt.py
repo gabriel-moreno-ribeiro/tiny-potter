@@ -173,28 +173,29 @@ class GPTLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)  # (B,T+1)
         return idx
 
-model = GPTLanguageModel()
-m = model.to(device)
-print(f"{sum(p.numel() for p in m.parameters())/1e6:.2f}M parameters on {device}")
+if __name__ == '__main__':  # so sample.py can import the model without training it
+    model = GPTLanguageModel()
+    m = model.to(device)
+    print(f"{sum(p.numel() for p in m.parameters())/1e6:.2f}M parameters on {device}")
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-for iter in range(max_iters):
+    for iter in range(max_iters):
 
-    # every once in a while check the loss on train and val
-    if iter % eval_interval == 0 or iter == max_iters - 1:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        # every once in a while check the loss on train and val
+        if iter % eval_interval == 0 or iter == max_iters - 1:
+            losses = estimate_loss()
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
-    xb, yb = get_batch('train')
+        xb, yb = get_batch('train')
 
-    logits, loss = model(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
+        logits, loss = model(xb, yb)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
 
-torch.save(model.state_dict(), 'model.pt')
+    torch.save(model.state_dict(), 'model.pt')
 
-# generate from the trained model
-context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+    # generate from the trained model
+    context = torch.zeros((1, 1), dtype=torch.long, device=device)
+    print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
