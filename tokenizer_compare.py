@@ -250,9 +250,20 @@ def wikipedia():
         ['Portuguese/English', f'{len(pt) / len(en):.2f}'] + ['n/a' if None in (e, p) else f'{p / e:.2f}' for e, p in zip(en_counts, pt_counts)],
     ])
 
+CODE = '''def is_palindrome(text):
+    letters = [c.lower() for c in text if c.isalpha()]
+    return letters == letters[::-1]
+'''
+LATEX = r'x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}'
+
+def code_and_math():
+    rows = [[label, f'{len(s):,}'] + [fmt(count(s)) for count in counters.values()] for label, s in [('Python function', CODE), ('LaTeX formula', LATEX)]]
+    table(['', 'characters'], rows)
+
 books_and_sentences()
 names()
 languages()
 informal_portuguese()
 formats()
 wikipedia()
+code_and_math()

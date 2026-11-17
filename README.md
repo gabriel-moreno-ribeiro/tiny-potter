@@ -148,6 +148,15 @@ For a long text I used the Wikipedia articles [Photosynthesis](https://en.wikipe
 
 The two articles aren't translations of each other, and the Portuguese one has 1.81 times as many characters, so characters per token is the fairer number: English gets 4.54 and 5.13, Portuguese 3.25 and 3.93. That puts Portuguese at about 1.4 times the tokens per character with the 0.9B and 1.3 with the 375B-A23B, close to the 1.43 and 1.26 from the FLORES test.
 
+The last test is code and math: a three-line Python function (`is_palindrome`) and the quadratic formula in LaTeX, `x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`. Both fit in my tokenizer's 90 characters.
+
+|  | characters | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|
+| Python function | 116 | 116 | 34 | 29 |
+| LaTeX formula | 38 | 38 | 21 | 21 |
+
+The 375B-A23B needs 29 tokens for the function against 34 for the 0.9B, mostly because it keeps `_palindrome` and `[::-` whole. In both, a four-space indent costs one token. The formula is the expensive part: both K2 tokenizers split it the same way into 21 tokens, under two characters per token, because each command like `\frac` becomes two tokens, the backslash (with the space before it) and the name.
+
 ## Credit
 
 The architecture and the order of the steps come from Andrej Karpathy's lecture [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and its repo [karpathy/ng-video-lecture](https://github.com/karpathy/ng-video-lecture).
