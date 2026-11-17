@@ -107,6 +107,26 @@ For the language test I took the first 200 sentences of the [FLORES-200](https:/
 
 The 375B-A23B needs fewer tokens than the 0.9B in every language; its ratios to English go from 1.06 to 1.37, the 0.9B's from 1.16 to 1.60. Arabic is the cheapest language after English for both; the 0.9B's tokenizer manifest says it was built from a 64k Jais tokenizer (Jais is an Arabic-English model). My tokenizer gets n/a even for English, because 11 of the 200 sentences contain characters like —, $, ’ or ö.
 
+The informal Portuguese test has 30 sentences with slang and abbreviations (vc, tá, pq, oxe, vixe, arretado and others), the same 30 in formal Portuguese, and the formal ones with the accents removed.
+
+| 30 sentences | characters | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|---|
+| informal | 715 | n/a | 272 | 233 |
+| formal | 877 | n/a | 293 | 238 |
+| formal without accents | 877 | 877 | 296 | 249 |
+
+Brazilian place names, split the same way as the names above:
+
+| place | my tokenizer | K2-Horizon-0.9B | K2-Horizon-375B-A23B |
+|---|---|---|---|
+| Salvador | S·a·l·v·a·d·o·r (8) | Salvador (1) | Salvador (1) |
+| Missão Velha | n/a | Miss·ão·Vel·ha (4) | Miss·ão·Vel·ha (4) |
+| Fortaleza | F·o·r·t·a·l·e·z·a (9) | Fort·ale·za (3) | Fortaleza (1) |
+| Juazeiro do Norte | J·u·a·z·e·i·r·o· ·d·o· ·N·o·r·t·e (17) | Ju·aze·iro·do·Norte (5) | Ju·aze·iro·do·Norte (5) |
+| Florianópolis | n/a | Flor·ian·ó·pol·is (5) | Florian·ópolis (2) |
+
+The informal sentences have 18% fewer characters than the formal ones but only 7% fewer tokens with the 0.9B and 2% fewer with the 375B-A23B. Removing the accents makes both K2 tokenizers slightly worse (296 and 249 tokens instead of 293 and 238), and the version without accents is the only one my tokenizer can read. Both keep Salvador whole, and the 375B-A23B also keeps Fortaleza and cuts Florianópolis into two pieces instead of five; Missão Velha and Juazeiro do Norte break up the same way in both.
+
 ## Credit
 
 The architecture and the order of the steps come from Andrej Karpathy's lecture [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and its repo [karpathy/ng-video-lecture](https://github.com/karpathy/ng-video-lecture).

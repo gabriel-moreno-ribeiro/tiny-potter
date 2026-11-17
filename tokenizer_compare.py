@@ -1,6 +1,7 @@
 import hashlib
 import os
 import tarfile
+import unicodedata
 import urllib.request
 
 from tokenizers import Tokenizer
@@ -144,6 +145,56 @@ def languages():
         rows.append([lang, f'{sum(map(len, lines)):,}'] + cells)
     table(['language', 'characters'], rows)
 
+INFORMAL_FORMAL = [
+    ('vc vem hj ou não?', 'Você vem hoje ou não?'),
+    ('tô cansadão, vou dormir cedo', 'Estou muito cansado, vou dormir cedo.'),
+    ('oxe, que história é essa?', 'Que história é essa?'),
+    ('vixe, esqueci a chave em casa', 'Esqueci a chave em casa.'),
+    ('esse forró tava arretado demais', 'Esse forró estava muito bom.'),
+    ('pq vc não me ligou?', 'Por que você não me ligou?'),
+    ('tá bom, a gente se vê amanhã', 'Está bem, nós nos vemos amanhã.'),
+    ('blz, te espero lá fora', 'Tudo bem, espero você lá fora.'),
+    ('mano, o jogo ontem foi mto doido', 'O jogo de ontem foi muito emocionante.'),
+    ('num sei se vou conseguir ir não', 'Não sei se vou conseguir ir.'),
+    ('bora tomar um açaí?', 'Vamos tomar um açaí?'),
+    ('cê tá doido, é?', 'Você está louco?'),
+    ('eita, choveu mto hj', 'Choveu muito hoje.'),
+    ('tb quero ir pra praia', 'Também quero ir para a praia.'),
+    ('vlw pela ajuda, mano', 'Obrigado pela ajuda.'),
+    ('manda no zap q eu vejo dps', 'Mande pelo WhatsApp que eu vejo depois.'),
+    ('tô de boa, tá tudo sussa', 'Estou bem, está tudo tranquilo.'),
+    ('o rolê de sábado foi top', 'O passeio de sábado foi ótimo.'),
+    ('mainha fez cuscuz pro café', 'Minha mãe fez cuscuz para o café da manhã.'),
+    ('ngm sabe onde fica isso não', 'Ninguém sabe onde fica isso.'),
+    ('tmj, qualquer coisa me chama', 'Conte comigo, se precisar de algo, me chame.'),
+    ('sdds de vc, vem me visitar', 'Estou com saudade de você, venha me visitar.'),
+    ('fds vou pra casa da minha vó', 'No fim de semana vou para a casa da minha avó.'),
+    ('nd a ver isso q vc falou', 'Isso que você falou não tem nada a ver.'),
+    ('uai, cê num vai com a gente?', 'Você não vai conosco?'),
+    ('bah, tchê, que frio hj', 'Está muito frio hoje.'),
+    ('obg, vc é um anjo', 'Obrigado, você é um anjo.'),
+    ('qnd vc chegar me avisa', 'Quando você chegar, me avise.'),
+    ('cadê o controle da tv?', 'Onde está o controle da televisão?'),
+    ('flw, até amanhã', 'Tchau, até amanhã.'),
+]
+PLACES = ['Salvador', 'Missão Velha', 'Fortaleza', 'Juazeiro do Norte', 'Florianópolis']
+
+def strip_accents(s):
+    # NFD splits a letter like ã into a plus a combining mark, so dropping the marks removes the accents
+    return unicodedata.normalize('NFC', ''.join(c for c in unicodedata.normalize('NFD', s) if not unicodedata.combining(c)))
+
+def informal_portuguese():
+    formal = [f for _, f in INFORMAL_FORMAL]
+    variants = {
+        'informal': [i for i, _ in INFORMAL_FORMAL],
+        'formal': formal,
+        'formal without accents': [strip_accents(f) for f in formal],
+    }
+    rows = [[label, f'{sum(map(len, lines)):,}'] + [fmt(total(count, lines)) for count in counters.values()] for label, lines in variants.items()]
+    table([f'{len(INFORMAL_FORMAL)} sentences', 'characters'], rows)
+    table(['place'], [[place] + [fmt_pieces(split(place)) for split in splitters.values()] for place in PLACES])
+
 books_and_sentences()
 names()
 languages()
+informal_portuguese()
